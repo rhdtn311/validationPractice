@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 @RequiredArgsConstructor
 @Controller
@@ -20,9 +21,15 @@ public class HomeController {
         return "/home";
     }
 
-    @RequestMapping("/createCharacter")
+    @RequestMapping(value = "/createCharacterV1", method = RequestMethod.GET)
     public String createCharacter(Model model) {
         model.addAttribute("character", new CharacterCreateForm());
-        return "/createCharacter";
+        return "createCharacterV1";
+    }
+
+    @RequestMapping(value = "/createCharacterV2", method = RequestMethod.GET)
+    public String createCharacterV2(Model model) {
+        model.addAttribute("character", new CharacterCreateForm());
+        return "createCharacterV2";
     }
 }

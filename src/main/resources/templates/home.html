@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"><head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
 <body>
     <button style="flex-direction: column" type="button"
-            th:onclick="|location.href='@{/createCharacter}'|">캐릭터 생성 </button>
+            th:onclick="|location.href='@{/createCharacterV1}'|"> 캐릭터 생성 V1 </button>
+
+    <button style="flex-direction: column" type="button"
+            th:onclick="|location.href='@{/createCharacterV2}'|"> 캐릭터 생성 V2 </button>
 
     <div>
         <h1> 캐릭터 목록 </h1>
