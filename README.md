@@ -1,5 +1,7 @@
 스프링 부트에서 검증 기능을 수행하는 BindingResult를 이해하고자 간단한 미니 프로젝트를 진행하였다.
 
+# 1. BindingResult에 Error를 직접 삽입
+
 **프로젝트 구성**
 
 - SpringMVC 5.3.13
@@ -631,4 +633,260 @@ typeMismatch=숫자를 입력해주세요.
 7. 성공
 
    ![image](https://user-images.githubusercontent.com/68289543/146328293-6d90e0a6-0463-44b6-9a05-504029e516bb.png)
+
+# 2. Bean Validation 사용
+
+Bean Validation을 사용하여 위와 같은 검증을 수행할 수 있도록 한다.
+
+**프로젝트 구성**
+
+- SpringMVC 5.3.13
+- ThymeLeaf 2.6.1
+- Lombok
+
+```bash
+├─main
+│  ├─generated
+│  ├─java
+│  │  └─Kong
+│  │      └─validationPractice
+│  │          │  ValidationPracticeApplication.java
+│  │          │
+│  │          ├─character
+│  │          │      Character.java
+│  │          │      CharacterCreateForm.java
+│  │          │
+│  │          ├─controller
+│  │          │      CreateCharacterController.java
+│  │          │      HomeController.java
+│  │          │
+│  │          ├─repository
+│  │          │      CharacterRepository.java
+│  │          │
+│  │          ├─service
+│  │          │      CharacterListService.java
+│  │          │      CreateCharacterService.java
+│  │          │
+│  │          └─validation
+│  │                  CharacterValidation.java
+│  │
+│  └─resources
+│      │  application.properties
+│      │  errors.properties
+│      │
+│      ├─static
+│      └─templates
+│              createCharacterV1.html
+│              createCharacterV2.html
+│              home.html
+│
+└─test
+    └─java
+        └─Kong
+            └─validationPractice
+                    ValidationPracticeApplicationTests.java
+```
+
+
+
+### 내용
+
+검증 조건은 위와 같다. 
+
+
+
+### 코드
+
+BeanValidation을 `CharacterCreateForm`에 적용하였다.
+
+**CharacterCreateForm**
+
+```java
+package Kong.validationPractice.character;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Length;
+import org.hibernate.validator.constraints.Range;
+
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotNull;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class CharacterCreateForm {
+
+    // weight / height^2가 25보다 크면 등록 불가능 (글로벌 오류)
+
+    // not null
+    // 2 ~ 15
+    @NotNull
+    @Length(min = 2, max = 15)
+    private String name;
+
+    // not null
+    // 15 ~ 100
+    @NotNull
+    @Range(min = 15, max = 100)
+    private Integer age;
+
+    // not null
+    @NotNull
+    @Range(min = 0, max = 200)
+    private Integer weight;
+
+    // not null
+    @NotNull
+    @Range(min = 0, max = 250)
+    private Integer height;
+
+    // email 형식을 맞추어야 함
+    @Email
+    private String email;
+
+    public Character toCharacter() {
+
+        return Character.builder()
+                .name(this.name)
+                .age(this.age)
+                .height(this.height)
+                .weight(this.weight)
+                .email(this.email)
+                .build();
+    }
+}
+
+```
+
+
+
+**HomeContrller - 추가**
+
+```java
+@RequestMapping(value = "/createCharacterV2", method = RequestMethod.GET)
+public String createCharacterV2(Model model) {
+    model.addAttribute("character", new CharacterCreateForm());
+    return "createCharacterV2";
+}
+```
+
+HomeController에 새로운 버튼을 추가하여 해당 버튼을 통해 BeanValidation을 사용하는 컨트롤러에 폼 데이터를 전송할 수 있도록 하였다.
+
+
+
+**CreateCharacterController - 추가**
+
+```java
+@PostMapping("/createCharacterV2")
+public String createCharacterUseBeanValidation(
+    @Validated @ModelAttribute(value="character") CharacterCreateForm characterCreateForm,
+    BindingResult bindingResult) {
+
+    if (characterCreateForm.getHeight() != null && characterCreateForm.getWeight() != null) {
+        if (characterCreateForm.getWeight() / Math.pow((double)characterCreateForm.getHeight() / 100, 2) > 25) {
+            bindingResult.reject("overWeight");
+        }
+    }
+
+    if (bindingResult.hasErrors()) {
+        return "createCharacterV2";
+    }
+
+    createCharacterService.saveCharacter(characterCreateForm.toCharacter());
+
+    return "redirect:/";
+}
+```
+
+바인딩 되는 객체 앞에 `@Validated` 어노테이션을 적용하여 검증 기능을 활성화하였다. 오브젝트 오류는 직접 작성하였다. (`bindingResult.reject()`)
+
+
+
+**createCharacterV2.html**
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        .field-error {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+    </style>
+
+</head>
+<body>
+    <form th:action="@{/createCharacterV2}" method="post" th:object="${character}">
+
+        <div th:if="${#fields.hasGlobalErrors()}">
+            <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}"> </p>
+        </div>
+
+        <div>
+            <label for="name"> 이름 </label>
+            <input type="text" id="name" name="name" th:value="${character.getName()}">
+            <div th:errors="${character.name}" th:errorclass="field-error"></div>
+        </div>
+        <div>
+            <label for="age"> 나이 </label>
+            <input type="text" id="age" name="age" th:value="${character.getAge()}">
+            <div th:errors="${character.age}" th:errorclass="field-error"></div>
+        </div>
+        <div>
+            <label for="height"> 키 </label>
+            <input type="text" id="height" name="height" th:value="${character.getHeight()}">
+            <div th:errors="${character.height}" th:errorclass="field-error" ></div>
+        </div>
+
+        <div>
+            <label for="weight"> 몸무게 </label>
+            <input type="text" id="weight" name="weight" th:value="${character.getWeight()}">
+            <div th:errors="${character.weight}" th:errorclass="field-error" ></div>
+        </div>
+
+        <div>
+            <label for="email"> 이메일 </label>
+            <input type="text" id="email" name="email" th:value="${character.getEmail()}">
+            <div th:errors="${character.email}" th:errorclass="field-error"></div>
+        </div>
+        
+        <div>
+            <button type="submit"> 등록 </button>
+        </div>
+    </form>
+</body>
+</html>
+```
+
+타임리프 에러 처리 코드를 적극 사용하였다.
+
+
+
+**Errors.properties - 추가**
+
+```properties
+# BeanValidation
+Length.name = 이름은 {2}글자 에서 {1}글자 사이어야 합니다.
+Range.age = 나이는 {2}세 이상 {1}세 이하여야 합니다.
+Range.height = 키는 {2}cm 이상 {1}cm 이하여야 합니다.
+Range.weight = 몸무게는 {2}kg 이상 {1}kg 이하여야 합니다.
+NotNull=값을 입력해주세요.
+Email= 이메일 형식이 아닙니다.
+```
+
+어노테이션의 이름을 `code`로 하여 메세지가 생성되기 때문에 직접 바꿀 수 있다.
+
+
+
+### 느낀점
+
+백앤드 검증에 사용되는 BindingResult를 처음 접해보았는데 간단하지만 매우 단순한 예시임에도 불구하고 코드가 매우 길어졌고 실제 기능을 구현한 코드보다 검증을 위한 코드가 훨씬 많고 반복적이어서 비효율적이고 유지보수에 힘들겠다고 생각하였다. 그렇기 때문에 더욱 BeanValidation을 사용하면서 어노테이션 기반으로 검증을 하니 직관적이고 반복적인 코드가 사라져 유용하게 느껴졌다.
+
+
 
