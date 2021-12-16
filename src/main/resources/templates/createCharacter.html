@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        .field-error {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+    </style>
+
+</head>
+<body>
+    <form th:action="@{/createCharacter}" method="post">
+
+        <div th:if="${globalError} != null">
+            <p class="field-error" th:text="#{overWeight.character}"> </p>
+        </div>
+
+        <div>
+            <label for="name"> 이름 </label>
+            <input type="text" id="name" name="name" th:value="${character.getName()}">
+            <div th:if="${nameError} != null" th:text="${nameError}" th:class="field-error"></div>
+        </div>
+        <div>
+            <label for="age"> 나이 </label>
+            <input type="text" id="age" name="age" th:value="${character.getAge()}">
+            <div th:if="${ageError} != null" th:text="${ageError}" th:class="field-error"></div>
+        </div>
+        <div>
+            <label for="height"> 키 </label>
+            <input type="text" id="height" name="height" th:value="${character.getHeight()}">
+            <div th:errors="${character.height}" th:class="field-error" ></div>
+        </div>
+
+        <div>
+            <label for="weight"> 몸무게 </label>
+            <input type="text" id="weight" name="weight" th:value="${character.getWeight()}">
+            <div th:errors="${character.weight}" th:class="field-error" ></div>
+        </div>
+
+        <div>
+            <label for="email"> 이메일 </label>
+            <input type="text" id="email" name="email" th:value="${character.getEmail()}">
+            <div th:if="${emailError} != null" th:text="#{form.character.email}" th:class="field-error"></div>
+        </div>
+
+
+        <div>
+            <button type="submit"> 등록 </button>
+        </div>
+    </form>
+</body>
+</html>

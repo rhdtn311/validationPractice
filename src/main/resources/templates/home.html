@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"><head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <button style="flex-direction: column" type="button"
+            th:onclick="|location.href='@{/createCharacter}'|">캐릭터 생성 </button>
+
+    <div>
+        <h1> 캐릭터 목록 </h1>
+        <table border="1">
+            <tr>
+                <th>이름</th>
+                <th>나이</th>
+                <th>이메일</th>
+                <th>키</th>
+                <th>몸무게</th>
+            </tr>
+            <tr th:each="character : ${characterList}">
+                <td th:text="${character.name}">username</td>
+                <td th:text="${character.age}">0</td>
+                <td th:text="${character.email}"></td>
+                <td th:text="${character.height}"></td>
+                <td th:text="${character.weight}"></td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
